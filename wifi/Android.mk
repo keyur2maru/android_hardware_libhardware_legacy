@@ -31,4 +31,13 @@ ifdef WPA_SUPPLICANT_VERSION
 LOCAL_CFLAGS += -DLIBWPA_CLIENT_EXISTS
 LOCAL_SHARED_LIBRARIES += libwpa_client
 endif
+<<<<<<< HEAD
+=======
+
+ifeq ($(BOARD_HAVE_XIAOMI_WIFI),true)
+LOCAL_CFLAGS += -DXIAOMI_WIFI
+LOCAL_SHARED_LIBRARIES += libqminvapi
+endif
+
+>>>>>>> 203686b... Fix Xiaomi wifi mac address
 LOCAL_SHARED_LIBRARIES += libnetutils

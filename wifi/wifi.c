@@ -132,9 +132,6 @@ static char supplicant_name[PROPERTY_VALUE_MAX];
 /* Is either SUPP_PROP_NAME or P2P_PROP_NAME */
 static char supplicant_prop_name[PROPERTY_KEY_MAX];
 
-<<<<<<< HEAD
-=======
-
 #ifdef XIAOMI_WIFI
 extern int qmi_nv_read_wlan_mac(char** mac);
 static unsigned char wlan_addr[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, };
@@ -170,7 +167,6 @@ char* get_samsung_wifi_type()
 }
 #endif
 
->>>>>>> 203686b... Fix Xiaomi wifi mac address
 static int insmod(const char *filename, const char *args)
 {
     void *module;
@@ -278,8 +274,6 @@ int wifi_load_driver()
 
     if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0)
         return -1;
-<<<<<<< HEAD
-=======
     usleep(200000);
 #endif
 
@@ -297,7 +291,6 @@ int wifi_load_driver()
 #endif
         return -1;
     }
->>>>>>> 203686b... Fix Xiaomi wifi mac address
 
     if (strcmp(FIRMWARE_LOADER,"") == 0) {
         /* usleep(WIFI_DRIVER_LOADER_DELAY); */
@@ -864,8 +857,6 @@ int wifi_change_fw_path(const char *fwpath)
     close(fd);
     return ret;
 }
-<<<<<<< HEAD
-=======
 
 int wifi_set_mode(int mode) {
     wifi_mode = mode;
@@ -889,4 +880,3 @@ int read_wlan_mac_addr()
     return 0;
 }
 #endif
->>>>>>> 203686b... Fix Xiaomi wifi mac address

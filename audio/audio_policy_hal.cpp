@@ -145,7 +145,7 @@ static audio_io_handle_t ap_get_output(struct audio_policy *pol,
 
     ALOGV("%s: tid %d", __func__, gettid());
     return lap->apm->getOutput((AudioSystem::stream_type)stream,
-                               sampling_rate, (int) format, channelMask,
+                               sampling_rate, format, channelMask,
                                (AudioSystem::output_flags)flags,
                                offloadInfo);
 }
@@ -180,7 +180,7 @@ static audio_io_handle_t ap_get_input(struct audio_policy *pol, audio_source_t i
                                       audio_in_acoustics_t acoustics)
 {
     struct legacy_audio_policy *lap = to_lap(pol);
-    return lap->apm->getInput((int) inputSource, sampling_rate, (int) format, channelMask,
+    return lap->apm->getInput((int) inputSource, sampling_rate, format, channelMask,
                               (AudioSystem::audio_in_acoustics)acoustics);
 }
 
@@ -365,10 +365,8 @@ static int create_legacy_ap(const struct audio_policy_device *device,
     lap->policy.init_stream_volume = ap_init_stream_volume;
     lap->policy.set_stream_volume_index = ap_set_stream_volume_index;
     lap->policy.get_stream_volume_index = ap_get_stream_volume_index;
-#ifndef ICS_AUDIO_BLOB
     lap->policy.set_stream_volume_index_for_device = ap_set_stream_volume_index_for_device;
     lap->policy.get_stream_volume_index_for_device = ap_get_stream_volume_index_for_device;
-#endif
     lap->policy.get_strategy_for_stream = ap_get_strategy_for_stream;
     lap->policy.get_devices_for_stream = ap_get_devices_for_stream;
     lap->policy.get_output_for_effect = ap_get_output_for_effect;
@@ -376,12 +374,8 @@ static int create_legacy_ap(const struct audio_policy_device *device,
     lap->policy.unregister_effect = ap_unregister_effect;
     lap->policy.set_effect_enabled = ap_set_effect_enabled;
     lap->policy.is_stream_active = ap_is_stream_active;
-#ifndef ICS_AUDIO_BLOB
-#ifndef MR1_AUDIO_BLOB
     lap->policy.is_stream_active_remotely = ap_is_stream_active_remotely;
-#endif
     lap->policy.is_source_active = ap_is_source_active;
-#endif
     lap->policy.dump = ap_dump;
     lap->policy.is_offload_supported = ap_is_offload_supported;
 
@@ -459,21 +453,21 @@ static int legacy_ap_dev_open(const hw_module_t* module, const char* name,
 }
 
 static struct hw_module_methods_t legacy_ap_module_methods = {
-        open: legacy_ap_dev_open
+        .open = legacy_ap_dev_open
 };
 
 struct legacy_ap_module HAL_MODULE_INFO_SYM = {
-    module: {
-        common: {
-            tag: HARDWARE_MODULE_TAG,
-            version_major: 1,
-            version_minor: 0,
-            id: AUDIO_POLICY_HARDWARE_MODULE_ID,
-            name: "LEGACY Audio Policy HAL",
-            author: "The Android Open Source Project",
-            methods: &legacy_ap_module_methods,
-            dso : NULL,
-            reserved : {0},
+    .module = {
+        .common = {
+            .tag = HARDWARE_MODULE_TAG,
+            .version_major = 1,
+            .version_minor = 0,
+            .id = AUDIO_POLICY_HARDWARE_MODULE_ID,
+            .name = "LEGACY Audio Policy HAL",
+            .author = "The Android Open Source Project",
+            .methods = &legacy_ap_module_methods,
+            .dso = NULL,
+            .reserved = {0},
         },
     },
 };

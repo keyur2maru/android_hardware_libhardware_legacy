@@ -71,12 +71,10 @@ AudioStreamOut::~AudioStreamOut()
 }
 
 // default implementation is unsupported
-#ifndef ICS_AUDIO_BLOB
 status_t AudioStreamOut::getNextWriteTimestamp(int64_t *timestamp)
 {
     return INVALID_OPERATION;
 }
-#endif
 
 AudioStreamIn::~AudioStreamIn() {}
 
@@ -148,6 +146,17 @@ status_t AudioHardwareBase::dumpState(int fd, const Vector<String16>& args)
     ::write(fd, result.string(), result.size());
     dump(fd, args);  // Dump the state of the concrete child.
     return NO_ERROR;
+}
+
+// default implementation calls its "without flags" counterpart
+AudioStreamOut* AudioHardwareInterface::openOutputStreamWithFlags(uint32_t devices,
+                                          audio_output_flags_t flags,
+                                          int *format,
+                                          uint32_t *channels,
+                                          uint32_t *sampleRate,
+                                          status_t *status)
+{
+    return openOutputStream(devices, format, channels, sampleRate, status);
 }
 
 // ----------------------------------------------------------------------------

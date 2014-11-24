@@ -1,5 +1,7 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,8 +71,7 @@ public:
     /**
      * return the frame size (number of bytes per sample).
      */
-    uint32_t    frameSize() const { return audio_channel_count_from_out_mask(channels())*
-                            ((format()==AUDIO_FORMAT_PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
+    uint32_t    frameSize() const { return popcount(channels())*((format()==AUDIO_FORMAT_PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
 
     /**
      * return the audio hardware driver latency in milli seconds.
@@ -116,7 +117,18 @@ public:
      * presented
      */
     virtual status_t    getNextWriteTimestamp(int64_t *timestamp);
-
+#ifdef QCOM_HARDWARE
+    virtual status_t    start() {return INVALID_OPERATION;}
+    virtual status_t    pause()  {return INVALID_OPERATION;}
+    virtual status_t    flush()  {return INVALID_OPERATION;}
+    virtual status_t    stop()  {return INVALID_OPERATION;}
+    virtual int         setObserver(void *observer)  {return INVALID_OPERATION;}
+    virtual status_t    getBufferInfo(buf_info **buf) {return INVALID_OPERATION;}
+    virtual status_t    isBufferAvailable(int *isAvail) {
+        *isAvail = true;
+        return NO_ERROR;
+    }
+#endif
 };
 
 /**
@@ -146,8 +158,7 @@ public:
     /**
      * return the frame size (number of bytes per sample).
      */
-    uint32_t    frameSize() const { return audio_channel_count_from_in_mask(channels())*
-                            ((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
+    uint32_t    frameSize() const { return AudioSystem::popCount(channels())*((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
 
     /** set the input gain for the audio driver. This method is for
      *  for future use */
@@ -248,13 +259,6 @@ public:
     /** This method creates and opens the audio hardware output stream */
     virtual AudioStreamOut* openOutputStream(
                                 uint32_t devices,
-                                int *format=0,
-                                uint32_t *channels=0,
-                                uint32_t *sampleRate=0,
-                                status_t *status=0) = 0;
-    virtual AudioStreamOut* openOutputStreamWithFlags(
-                                uint32_t devices,
-                                audio_output_flags_t flags=(audio_output_flags_t)0,
                                 int *format=0,
                                 uint32_t *channels=0,
                                 uint32_t *sampleRate=0,

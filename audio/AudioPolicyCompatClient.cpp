@@ -85,9 +85,11 @@ status_t AudioPolicyCompatClient::closeInput(audio_io_handle_t input)
     return mServiceOps->close_input(mService, input);
 }
 
-status_t AudioPolicyCompatClient::invalidateStream(AudioSystem::stream_type stream)
+status_t AudioPolicyCompatClient::setStreamOutput(AudioSystem::stream_type stream,
+                                             audio_io_handle_t output)
 {
-    return mServiceOps->invalidate_stream(mService, (audio_stream_type_t)stream);
+    return mServiceOps->set_stream_output(mService, (audio_stream_type_t)stream,
+                                          output);
 }
 
 status_t AudioPolicyCompatClient::moveEffects(int session, audio_io_handle_t srcOutput,

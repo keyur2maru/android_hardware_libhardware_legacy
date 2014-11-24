@@ -1,7 +1,5 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
- * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,12 +87,11 @@ public:
         virtual void setSystemProperty(const char* property, const char* value);
         virtual status_t initCheck();
         virtual audio_io_handle_t getOutput(AudioSystem::stream_type stream,
-                                            uint32_t samplingRate = 0,
-                                            uint32_t format = AudioSystem::FORMAT_DEFAULT,
-                                            uint32_t channels = 0,
-                                            AudioSystem::output_flags flags =
-                                                    AudioSystem::OUTPUT_FLAG_INDIRECT,
-                                            const audio_offload_info_t *offloadInfo = NULL);
+                                            uint32_t samplingRate,
+                                            audio_format_t format,
+                                            audio_channel_mask_t channelMask,
+                                            AudioSystem::output_flags flags,
+                                            const audio_offload_info_t *offloadInfo);
         virtual status_t startOutput(audio_io_handle_t output,
                                      AudioSystem::stream_type stream,
                                      int session = 0);
@@ -104,8 +101,8 @@ public:
         virtual void releaseOutput(audio_io_handle_t output);
         virtual audio_io_handle_t getInput(int inputSource,
                                             uint32_t samplingRate,
-                                            uint32_t format,
-                                            uint32_t channels,
+                                            audio_format_t format,
+                                            audio_channel_mask_t channelMask,
                                             AudioSystem::audio_in_acoustics acoustics);
 
         // indicates to the audio policy manager that the input starts being used.
@@ -114,6 +111,7 @@ public:
         // indicates to the audio policy manager that the input stops being used.
         virtual status_t stopInput(audio_io_handle_t input);
         virtual void releaseInput(audio_io_handle_t input);
+        virtual void closeAllInputs();
         virtual void initStreamVolume(AudioSystem::stream_type stream,
                                                     int indexMin,
                                                     int indexMax);
@@ -211,11 +209,12 @@ protected:
 
             bool isCompatibleProfile(audio_devices_t device,
                                      uint32_t samplingRate,
-                                     uint32_t format,
-                                     uint32_t channelMask,
+                                     audio_format_t format,
+                                     audio_channel_mask_t channelMask,
                                      audio_output_flags_t flags) const;
 
             void dump(int fd);
+            void log();
 
             // by convention, "0' in the first entry in mSamplingRates, mChannelMasks or mFormats
             // indicates the supported parameters should be read from the output stream
@@ -299,6 +298,7 @@ protected:
 
             status_t    dump(int fd);
 
+            audio_io_handle_t mId;                      // input handle
             uint32_t mSamplingRate;                     //
             audio_format_t mFormat;                     // input configuration
             audio_channel_mask_t mChannelMask;             //
@@ -340,6 +340,7 @@ protected:
         };
 
         void addOutput(audio_io_handle_t id, AudioOutputDescriptor *outputDesc);
+        void addInput(audio_io_handle_t id, AudioInputDescriptor *inputDesc);
 
         // return the strategy corresponding to a given stream type
         static routing_strategy getStrategy(AudioSystem::stream_type stream);
@@ -360,7 +361,7 @@ protected:
 
         // change the route of the specified output. Returns the number of ms we have slept to
         // allow new routing to take effect in certain cases.
-        virtual uint32_t setOutputDevice(audio_io_handle_t output,
+        uint32_t setOutputDevice(audio_io_handle_t output,
                              audio_devices_t device,
                              bool force = false,
                              int delayMs = 0);
@@ -381,7 +382,7 @@ protected:
         virtual float computeVolume(int stream, int index, audio_io_handle_t output, audio_devices_t device);
 
         // check that volume change is permitted, compute and send new volume to audio hardware
-        virtual status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, audio_devices_t device, int delayMs = 0, bool force = false);
+        status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, audio_devices_t device, int delayMs = 0, bool force = false);
 
         // apply all stream volumes to the specified output and device
         void applyStreamVolumes(audio_io_handle_t output, audio_devices_t device, int delayMs = 0, bool force = false);
@@ -394,7 +395,7 @@ protected:
                              audio_devices_t device = (audio_devices_t)0);
 
         // Mute or unmute the stream on the specified output
-        virtual void setStreamMute(int stream,
+        void setStreamMute(int stream,
                            bool on,
                            audio_io_handle_t output,
                            int delayMs = 0,
@@ -418,7 +419,13 @@ protected:
         // transfers the audio tracks and effects from one output thread to another accordingly.
         status_t checkOutputsForDevice(audio_devices_t device,
                                        AudioSystem::device_connection_state state,
-                                       SortedVector<audio_io_handle_t>& outputs);
+                                       SortedVector<audio_io_handle_t>& outputs,
+                                       const String8 paramStr);
+
+        status_t checkInputsForDevice(audio_devices_t device,
+                                      AudioSystem::device_connection_state state,
+                                      SortedVector<audio_io_handle_t>& inputs,
+                                      const String8 paramStr);
 
         // close an output and its companion duplicating output.
         void closeOutput(audio_io_handle_t output);
@@ -485,12 +492,12 @@ protected:
                                        AudioSystem::output_flags flags);
         IOProfile *getInputProfile(audio_devices_t device,
                                    uint32_t samplingRate,
-                                   uint32_t format,
-                                   uint32_t channelMask);
+                                   audio_format_t format,
+                                   audio_channel_mask_t channelMask);
         IOProfile *getProfileForDirectOutput(audio_devices_t device,
                                                        uint32_t samplingRate,
-                                                       uint32_t format,
-                                                       uint32_t channelMask,
+                                                       audio_format_t format,
+                                                       audio_channel_mask_t channelMask,
                                                        audio_output_flags_t flags);
 
         audio_io_handle_t selectOutputForEffects(const SortedVector<audio_io_handle_t>& outputs);
@@ -517,7 +524,7 @@ protected:
         void loadGlobalConfig(cnode *root);
         status_t loadAudioPolicyConfig(const char *path);
         void defaultAudioPolicyConfig(void);
-        static bool isVirtualInputDevice(audio_devices_t device);
+
 
         AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
         audio_io_handle_t mPrimaryOutput;              // primary output handle
@@ -526,7 +533,10 @@ protected:
         // copy of mOutputs before setDeviceConnectionState() opens new outputs
         // reset to mOutputs when updateDevicesAndOutputs() is called.
         DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> mPreviousOutputs;
-        DefaultKeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;     // list of input descriptors
+
+        // list of input descriptors currently opened
+        DefaultKeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;
+
         audio_devices_t mAvailableOutputDevices; // bit field of all available output devices
         audio_devices_t mAvailableInputDevices; // bit field of all available input devices
                                                 // without AUDIO_DEVICE_BIT_IN to allow direct bit
@@ -537,8 +547,8 @@ protected:
         StreamDescriptor mStreams[AudioSystem::NUM_STREAM_TYPES];           // stream descriptors for volume control
         String8 mA2dpDeviceAddress;                                         // A2DP device MAC address
         String8 mScoDeviceAddress;                                          // SCO device MAC address
-        String8 mUsbCardAndDevice; // USB audio ALSA card and device numbers:
-                                   // card=<card_number>;device=<><device_number>
+        String8 mUsbOutCardAndDevice;                                       // USB audio ALSA card and device numbers:
+                                                                            // card=<card_number>;device=<><device_number>
         bool    mLimitRingtoneVolume;                                       // limit ringtone volume to music volume if headset connected
         audio_devices_t mDeviceForStrategy[NUM_STRATEGIES];
         float   mLastVoiceVolume;                                           // last voice volume value sent to audio HAL
@@ -583,6 +593,7 @@ private:
         // updates device caching and output for streams that can influence the
         //    routing of notifications
         void handleNotificationRoutingForStream(AudioSystem::stream_type stream);
+        static bool isVirtualInputDevice(audio_devices_t device);
 };
 
 };
